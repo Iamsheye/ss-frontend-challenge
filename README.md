@@ -1,131 +1,84 @@
-# Teste para Desenvolvedor(a) Front-End Next.js
+# SS Frontend Challenge — NFT Marketplace
 
-## Introdução
+Next.js (App Router) + React + TypeScript + Tailwind CSS storefront for the
+Starsoft frontend challenge. See [CHALLENGE.md](./CHALLENGE.md) for the full
+challenge spec.
 
-Bem-vindo(a) ao processo seletivo para a posição de **Desenvolvedor(a) Front-End** em nossa equipe! Este teste tem como objetivo avaliar suas habilidades técnicas em **Next.js**, **React** e as demais tecnologias mencionadas na descrição da vaga.
+## Prerequisites
 
-## Instruções
+- Node.js 20+ and npm (for local development), **or**
+- Docker 24+ with Docker Compose v2 (for containerized development)
+- Port `3000` free
 
-- Faça um **fork** deste repositório para o seu GitHub pessoal.
-- Desenvolva a aplicação conforme as especificações abaixo, seguindo as **melhores práticas de desenvolvimento**.
-- Após a conclusão, envie o link do seu repositório para avaliação.
-- Sinta-se à vontade para adicionar qualquer documentação ou comentários que julgar necessário.
+## Running with Docker (recommended)
 
-## Desafio
+Single command:
 
-### Contexto
+```bash
+docker compose up
+```
 
-Você foi designado para desenvolver a interface de um **marketplace de NFTs** (Non-Fungible Tokens) com funcionalidades de carrinho de compras. O objetivo é criar uma aplicação web responsiva e interativa que proporcione uma ótima experiência ao usuário, utilizando **Next.js** como framework principal.
+Then open [http://localhost:3000](http://localhost:3000).
 
-### Requisitos
+| Command                      | Purpose                                                     |
+| ---------------------------- | ----------------------------------------------------------- |
+| `docker compose up`          | Start the dev server with hot-reload                        |
+| `docker compose up --build`  | Rebuild the image (after `Dockerfile` / dependency changes) |
+| `docker compose up -d`       | Run in the background                                       |
+| `docker compose logs -f web` | Follow the Next.js logs                                     |
+| `docker compose down`        | Stop and remove containers                                  |
 
-1. **Uso do Next.js**
+Production preview (optimized build served with `next start`):
 
-   - Utilize **Next.js** como o framework principal da aplicação.
-   - Aproveite os recursos do Next.js, como:
-     - **Renderização no Lado do Servidor (SSR)** e/ou **Geração de Sites Estáticos (SSG)** para otimizar o carregamento das páginas.
-     - **Rotas Dinâmicas** para páginas de detalhes dos NFTs.
-     - **Next.js API Routes** se necessário para funcionalidades adicionais.
-     - **Otimização de Imagens** com o componente `next/image`.
-     - **Importação Dinâmica** para carregamento otimizado de componentes pesados.
+```bash
+docker compose --profile prod up --build web-prod
+```
 
-2. **Interface do Usuário**
+### Docker configuration specifics
 
-   - Implemente o design fornecido no link do **Figma**:
-     - [Figma Design](https://www.figma.com/design/j9HHfWPPoLyObtlVBeMhTD/Front-end-Challenge?node-id=0-1&t=sWwJ0qlYdwzJHKyJ-0)
-   - Siga fielmente o design e as especificações fornecidas.
-   - Garanta que a aplicação seja **responsiva** e funcione bem em diferentes tamanhos de tela.
-   - Implemente navegação entre as páginas utilizando o sistema de roteamento do Next.js.
+- **Files:** `Dockerfile` (multi-stage), `docker-compose.yml` (orchestration),
+  `.dockerignore` (build context exclusions).
+- **Stages in `Dockerfile`:** `deps` (all deps via `npm ci`) → `development`
+  (default, runs `next dev -H 0.0.0.0 -p 3000`) → `builder` (`npm run build`) →
+  `prod-deps` (`npm ci --omit=dev`) → `production` (non-root `nextjs` user,
+  serves `next start`). Base image is `node:22-alpine` (overridable with the
+  `NODE_VERSION` build arg); `libc6-compat` is installed for Next.js/SWC on
+  Alpine.
+- **Only one service is required:** the Next.js app (`web`). No database or
+  external infra exists, so there is nothing else to orchestrate.
+- **Hot-reload:** source is bind-mounted (`.:/app`); `node_modules` and `.next`
+  use anonymous volumes so the host never shadows or clobbers the container's
+  copies.
+- **Networking:** `HOSTNAME=0.0.0.0` plus the explicit `-H 0.0.0.0` flag so the
+  dev server is reachable from outside the container.
+- **File watching:** `CHOKIDAR_USEPOLLING=true` and `WATCHPACK_POLLING=true`
+  make reloads reliable under Docker Desktop (macOS/Windows).
+- **Telemetry:** `NEXT_TELEMETRY_DISABLED=1`.
+- **No `.env` required:** no secrets are needed today; Compose already provides
+  the dev vars. If API URLs/keys are added later, put them in a local `.env`
+  (already git- and docker-ignored).
+- **Troubleshooting:** port conflict on `3000` → stop the other process or
+  remap the port in `docker-compose.yml` (e.g. `"3001:3000"`); after changing
+  `package.json`, rerun with `--build` to reinstall dependencies.
 
-3. **Gerenciamento de Estado**
+## Running locally (without Docker)
 
-   - Utilize **Redux** ou **Redux Toolkit** para gerenciar o estado global da aplicação.
-   - Configure a store do Redux e implemente os reducers necessários.
-   - Gerencie estados como itens no carrinho,
+```bash
+npm ci
+npm run dev
+```
 
-4. **Busca de Dados**
+## Scripts
 
-   - Use **React Query** para buscar e sincronizar dados da API.
-   - A API está documentada em:
-     - [Starsoft Challenge API Docs](https://starsoft-challenge-7dfd4a56a575.herokuapp.com/v1/docs)
-   - Implemente chamadas para obter a lista de NFTs, detalhes dos itens, etc.
-   - Utilize o **Data Fetching** do Next.js (`getStaticProps`, `getServerSideProps`) conforme adequado.
-   - Trate os estados de **loading**, **sucesso** e **erro** nas requisições.
+| Script          | Purpose                          |
+| --------------- | -------------------------------- |
+| `npm run dev`   | Start the dev server (Turbopack) |
+| `npm run build` | Create a production build        |
+| `npm run start` | Serve the production build       |
+| `npm run lint`  | Run ESLint                        |
+| `npm run format` | Format all files with Prettier (incl. Tailwind class sorting) |
+| `npm run format:check` | Check formatting without writing |
 
-5. **Animações e Interações**
+## Tech stack
 
-   - Utilize **Framer Motion** para adicionar animações e interações conforme necessário.
-   - Garanta que as animações sejam suaves e contribuam para a experiência do usuário.
-   - Implemente animações em transições de página, hover em botões e cards, entre outros.
-
-6. **Estilização**
-
-   - Use **SASS** ou **Styled Components** para estilizar a aplicação.
-   - Organize os estilos de maneira modular e reutilizável.
-   - Siga as boas práticas de organização de arquivos e componentes.
-   - Garanta a consistência visual em toda a aplicação.
-
-7. **Configuração com Docker**
-
-   - Configure o ambiente de desenvolvimento utilizando **Docker** e **Docker Compose**.
-   - Crie um arquivo `Dockerfile` para a aplicação Next.js.
-   - Crie um arquivo `docker-compose.yml` para orquestrar os serviços necessários.
-   - A aplicação deve ser iniciada com um único comando (`docker-compose up`).
-   - Documente quaisquer configurações específicas necessárias.
-
-8. **Boas Práticas de Código**
-
-   - Aplique os princípios de **Clean Code** em toda a sua implementação.
-   - Utilize um padrão de código consistente e configure **ESLint** e **Prettier** no projeto.
-   - Documente o código quando necessário para melhorar a legibilidade.
-   - Utilize os recursos do **Next.js** para otimização, como importação dinâmica e otimização de imagens.
-
-9. **Testes**
-
-   - Escreva testes unitários e/ou de integração para as principais funcionalidades da aplicação utilizando **Jest** e **React Testing Library**.
-   - Os testes devem cobrir, no mínimo, os componentes principais e funcionalidades críticas.
-   - Garanta que todos os testes passem antes de enviar o projeto.
-
-### Diferenciais (Desejável)
-
-- **TypeScript**
-
-  - Utilize **TypeScript** para adicionar tipagem estática ao seu código, aumentando a robustez e manutenção do projeto.
-
-- **SEO e Acessibilidade**
-
-  - Implemente boas práticas de **SEO** e **acessibilidade** na aplicação.
-  - Utilize o componente `next/head` para manipulação de meta tags.
-  - Otimize a performance da aplicação seguindo as recomendações do **Lighthouse**.
-
-## Entrega
-
-- O código deve estar disponível em um repositório Git (preferencialmente **GitHub**) público.
-- Inclua um arquivo `README.md` com:
-  - Instruções claras sobre como configurar e executar a aplicação.
-  - Descrição das funcionalidades implementadas.
-  - Tecnologias utilizadas e justificativas de escolhas técnicas.
-  - Possíveis limitações ou melhorias futuras.
-- Certifique-se de que o histórico de commits reflita o andamento do desenvolvimento, com mensagens claras e objetivas.
-
-## Avaliação
-
-Os seguintes aspectos serão considerados na avaliação:
-
-- **Uso do Next.js**: Aproveitamento adequado dos recursos e features do Next.js na aplicação.
-- **Fidelidade ao Design**: A interface deve ser fiel ao design fornecido no Figma.
-- **Funcionalidade**: A aplicação deve estar funcional e todas as interações devem estar implementadas corretamente.
-- **Gerenciamento de Estado**: O uso de Redux para gerenciamento de estado deve ser eficiente e bem estruturado.
-- **Busca de Dados**: A integração com a API usando React Query e Next.js deve ser feita corretamente.
-- **Animações e Interações**: As animações devem ser suaves e bem integradas na experiência do usuário.
-- **Código Limpo**: O código deve ser limpo, seguindo boas práticas de desenvolvimento e princípios de Clean Code.
-- **Estilização**: A aplicação deve ser estilizada usando SASS de forma modular e reutilizável.
-- **Testes**: Qualidade e abrangência dos testes implementados.
-- **Configuração com Docker**: A configuração do ambiente de desenvolvimento utilizando Docker e Docker Compose deve ser clara e funcional.
-- **Documentação**: Clareza das instruções e documentação fornecidas no `README.md`.
-- **Histórico de Commits**: Uso adequado do Git com commits bem descritos.
-
----
-
-Boa sorte! Estamos ansiosos para conhecer o seu trabalho e potencial.
-
+Next.js 16 (App Router, Turbopack) · React 19 · TypeScript · Tailwind CSS 4

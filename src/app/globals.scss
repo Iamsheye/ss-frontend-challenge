@@ -1,0 +1,12 @@
+@use "../styles/variables" as *;
+@use "../styles/reset";
+
+html {
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background: #{$background};
+  font-family: #{$font-poppins};
+  color: #{$color-white};
+}

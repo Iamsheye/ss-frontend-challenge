@@ -1,0 +1,56 @@
+# Development environment orchestrated with Docker Compose.
+#
+# Usage:
+#   docker compose up            # start dev server at http://localhost:3000
+#   docker compose up --build    # rebuild image after Dockerfile / deps change
+#   docker compose down          # stop and remove containers
+#
+# The app is the only required service (Next.js frontend, no database or
+# external infra). A production profile is included for serving an
+# optimized build (`docker compose --profile prod up web-prod`).
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: ss-frontend-challenge-web
+    ports:
+      - "3000:3000"
+    volumes:
+      # Live source for hot-reload...
+      - .:/app
+      # ...but keep container-owned build artifacts / deps isolated so the
+      # host's node_modules / .next never shadow (or get clobbered by) them.
+      - /app/node_modules
+      - /app/.next
+    environment:
+      NODE_ENV: development
+      HOSTNAME: 0.0.0.0
+      PORT: 3000
+      NEXT_TELEMETRY_DISABLED: 1
+      # Reliable file watching inside Docker Desktop (macOS / Windows).
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+
+  # Optimized production build. Opt-in via:
+  #   docker compose --profile prod up --build web-prod
+  web-prod:
+    profiles: ["prod"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: ss-frontend-challenge-web-prod
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      HOSTNAME: 0.0.0.0
+      PORT: 3000
+      NEXT_TELEMETRY_DISABLED: 1
+    restart: unless-stopped
