@@ -29,7 +29,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${ibmPlexSans.variable} ${poppins.variable} ${lato.variable}`}
+      className={`${ibmPlexSans.variable} ${poppins.className} ${lato.variable}`}
     >
       <body>
         <Providers>{children}</Providers>

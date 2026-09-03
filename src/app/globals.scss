@@ -1,12 +1,27 @@
 @use "../styles/variables" as *;
 @use "../styles/reset";
 
+:root {
+  --background: #{$background};
+  --foreground: #{$foreground};
+  --font-ibm: #{$font-ibm};
+  --font-lato: #{$font-lato};
+  --color-white: #{$color-white};
+  --color-primary: #{$color-primary};
+  --color-charcoal: #{$color-charcoal};
+  --color-silver: #{$color-silver};
+  --breakpoint-sm: #{$breakpoint-sm};
+  --breakpoint-md: #{$breakpoint-md};
+  --radius-full: #{$radius-full};
+  --radius-md: #{$radius-md};
+}
+
 html {
   -webkit-font-smoothing: antialiased;
 }
 
 body {
   background: #{$background};
-  font-family: #{$font-poppins};
+  font-family: "Poppins", sans-serif;
   color: #{$color-white};
 }

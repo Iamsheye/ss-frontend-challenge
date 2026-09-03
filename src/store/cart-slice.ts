@@ -1,8 +1,9 @@
+import { Product } from "@/api";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import { createSlice } from "@reduxjs/toolkit";
 
 export interface CartItem {
-  id: string;
+  product: Product;
   quantity: number;
 }
 
@@ -18,25 +19,31 @@ export const cartSlice = createSlice({
   name: "cart",
   initialState,
   reducers: {
-    addItem: (state, action: PayloadAction<string>) => {
-      const existing = state.items.find((item) => item.id === action.payload);
+    addItem: (state, action: PayloadAction<Product>) => {
+      const existing = state.items.find(
+        (item) => item.product.id === action.payload.id,
+      );
       if (existing) {
         existing.quantity += 1;
       } else {
-        state.items.push({ id: action.payload, quantity: 1 });
+        state.items.push({ product: action.payload, quantity: 1 });
       }
     },
-    removeItem: (state, action: PayloadAction<string>) => {
-      state.items = state.items.filter((item) => item.id !== action.payload);
+    removeItem: (state, action: PayloadAction<number>) => {
+      state.items = state.items.filter(
+        (item) => item.product.id !== action.payload,
+      );
     },
     updateQuantity: (
       state,
-      action: PayloadAction<{ id: string; quantity: number }>,
+      action: PayloadAction<{ id: number; quantity: number }>,
     ) => {
-      const item = state.items.find((i) => i.id === action.payload.id);
+      const item = state.items.find((i) => i.product.id === action.payload.id);
       if (!item) return;
       if (action.payload.quantity <= 0) {
-        state.items = state.items.filter((i) => i.id !== action.payload.id);
+        state.items = state.items.filter(
+          (i) => i.product.id !== action.payload.id,
+        );
       } else {
         item.quantity = action.payload.quantity;
       }
