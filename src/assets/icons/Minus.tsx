@@ -10,9 +10,9 @@ const Minus = ({ size = 16 }: { size?: number }) => {
       <path
         d="M3.22925 8H12.5626"
         stroke="white"
-        stroke-width="0.75"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeWidth="0.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );
