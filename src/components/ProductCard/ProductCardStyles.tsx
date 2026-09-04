@@ -69,6 +69,7 @@ const ProductCardStyles = styled.div`
   }
 
   .product-description {
+    color: var(--color-silver);
     font-weight: 300;
     font-size: 0.75rem;
     line-height: 100%;
