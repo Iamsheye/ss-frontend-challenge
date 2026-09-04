@@ -24,18 +24,26 @@ const HeaderStyles = styled.header`
   }
 `;
 
-export const CartLink = styled(Link)`
+export const CartButton = styled.button`
   padding: 8px;
   display: flex;
   align-items: center;
   gap: 8px;
-  text-decoration: none;
+  background: transparent;
+  border: none;
+  cursor: pointer;
   color: var(--color-white);
   font-family: var(--font-ibm);
 
   font-size: 1.25rem;
   line-height: 100%;
   letter-spacing: -0.29px;
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
 `;
 
 export default HeaderStyles;
