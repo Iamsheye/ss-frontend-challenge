@@ -26,6 +26,7 @@ export default function HomeClient() {
     error,
     refetch,
     data,
+    totalCount,
   } = useInfiniteProducts();
 
   const router = useRouter();
@@ -93,6 +94,8 @@ export default function HomeClient() {
         hasNextPage={hasNextPage ?? false}
         isFetchingNextPage={isFetchingNextPage}
         onLoadMore={() => fetchNextPage()}
+        loadedCount={products.length}
+        totalCount={totalCount}
       />
     </>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef, type Ref } from "react";
 import Image from "next/image";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowLeft, Minus, Plus, Trash } from "@/assets/icons";
@@ -39,11 +39,46 @@ const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
   const dispatch = useAppDispatch();
   const items = useAppSelector((state) => state.cart.items);
   const reduceMotion = useReducedMotion();
+  const drawerRef = useRef<HTMLElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!open) return;
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    // Move focus inside the dialog on open (replaces `autoFocus` so the
+    // focus-trap below has a deterministic starting point).
+    closeButtonRef.current?.focus();
+
+    const getFocusable = (): HTMLElement[] => {
+      const root = drawerRef.current;
+      if (!root) return [];
+      const selectors =
+        'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
+      return Array.from(root.querySelectorAll<HTMLElement>(selectors)).filter(
+        (el) => !el.hasAttribute("disabled") && el.tabIndex !== -1,
+      );
+    };
+
     const handleKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const focusable = getFocusable();
+      if (focusable.length === 0) {
+        event.preventDefault();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     };
     document.addEventListener("keydown", handleKey);
     const previousOverflow = document.body.style.overflow;
@@ -51,6 +86,8 @@ const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
     return () => {
       document.removeEventListener("keydown", handleKey);
       document.body.style.overflow = previousOverflow;
+      // Return focus to whatever opened the dialog.
+      previouslyFocused?.focus?.();
     };
   }, [open, onClose]);
 
@@ -103,6 +140,8 @@ const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
           />
           <Drawer
             key="cart-drawer"
+            id="cart-drawer"
+            ref={drawerRef as Ref<HTMLElement>}
             role="dialog"
             aria-modal="true"
             aria-label="Mochila de Compras"
@@ -120,11 +159,11 @@ const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
           >
             <div className="cart-header">
               <button
+                ref={closeButtonRef}
                 type="button"
                 className="cart-back"
                 onClick={onClose}
                 aria-label="Voltar e fechar carrinho"
-                autoFocus
               >
                 <ArrowLeft />
               </button>

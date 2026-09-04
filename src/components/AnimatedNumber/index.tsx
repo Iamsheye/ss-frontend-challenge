@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 export interface AnimatedValueProps {
@@ -30,17 +30,23 @@ const AnimatedValue = ({
   distance = 14,
 }: AnimatedValueProps) => {
   const reduceMotion = useReducedMotion();
-  const [prevValue, setPrevValue] = useState<string | number>(value);
   const [direction, setDirection] = useState(1);
+  const prevRef = useRef<string | number>(value);
 
-  if (prevValue !== value) {
-    setPrevValue(value);
-    if (typeof value === "number" && typeof prevValue === "number") {
-      setDirection(value >= prevValue ? 1 : -1);
-    } else {
-      setDirection(1);
+  // Derive slide direction in an effect instead of setting state during
+  // render (React docs "adjust state during render" pattern). This keeps the
+  // update out of the render phase and safe under Concurrent Mode.
+  useEffect(() => {
+    const prev = prevRef.current;
+    if (prev !== value) {
+      if (typeof value === "number" && typeof prev === "number") {
+        setDirection(value >= prev ? 1 : -1);
+      } else {
+        setDirection(1);
+      }
+      prevRef.current = value;
     }
-  }
+  }, [value]);
 
   const text = String(value);
 
@@ -75,7 +81,7 @@ const AnimatedValue = ({
       <AnimatePresence mode="popLayout" initial={false}>
         <motion.span
           key={text}
-          aria-hidden={false}
+          aria-hidden="true"
           initial={{ y: direction * distance, opacity: 0, filter: "blur(3px)" }}
           animate={{ y: 0, opacity: 1, filter: "blur(0px)" }}
           exit={{ y: direction * -distance, opacity: 0, filter: "blur(3px)" }}

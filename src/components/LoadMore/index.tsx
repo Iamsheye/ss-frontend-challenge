@@ -10,6 +10,10 @@ export interface LoadMoreProps {
   /** `true` while the next 8-product page is being fetched. */
   isFetchingNextPage: boolean;
   onLoadMore: () => void;
+  /** Number of products currently rendered. Used for real progress. */
+  loadedCount: number;
+  /** Server-side total (`count`). Used for real progress. */
+  totalCount: number;
 }
 
 const spin = keyframes`
@@ -51,8 +55,9 @@ const LoadMoreWrapper = styled.div`
 `;
 
 interface ProgressProps {
-  isDone: boolean;
-  isLoading?: boolean;
+  $isDone: boolean;
+  $isLoading?: boolean;
+  $progress: number;
 }
 
 const ProgressBar = styled.div<ProgressProps>`
@@ -68,7 +73,7 @@ const ProgressBar = styled.div<ProgressProps>`
     top: 0;
     left: 0;
     content: "";
-    width: ${({ isDone }) => (isDone ? "100%" : "50%")};
+    width: ${({ $progress }) => $progress}%;
     height: 100%;
     background-color: var(--color-primary);
     border-radius: var(--radius-md);
@@ -86,9 +91,9 @@ const ProgressBar = styled.div<ProgressProps>`
       rgba(255, 255, 255, 0.35) 50%,
       transparent 100%
     );
-    opacity: ${({ isDone, isLoading }) => (!isDone && isLoading ? 1 : 0)};
-    animation: ${({ isDone, isLoading }) =>
-      !isDone && isLoading ? barShimmer : "none"};
+    opacity: ${({ $isDone, $isLoading }) => (!$isDone && $isLoading ? 1 : 0)};
+    animation: ${({ $isDone, $isLoading }) =>
+      !$isDone && $isLoading ? barShimmer : "none"};
     animation-duration: 1.2s;
     animation-timing-function: linear;
     animation-iteration-count: infinite;
@@ -154,6 +159,18 @@ const LoadMoreButton = styled(DarkButton)<{ $isDone?: boolean }>`
   }
 `;
 
+const VisuallyHidden = styled.span`
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+`;
+
 /**
  * `.load-more` pagination footer.
  *
@@ -161,14 +178,33 @@ const LoadMoreButton = styled(DarkButton)<{ $isDone?: boolean }>`
  *   spinner replaces the label.
  * - When `hasNextPage` is `false` the label becomes "Você já viu tudo"
  *   and `ProgressBar` flips to `isDone`.
+ * - Progress is determinate: `(loadedCount / totalCount) * 100`, capped at
+ *   99% until `isDone` so the bar never claims completion early.
  */
 const LoadMore = ({
   hasNextPage,
   isFetchingNextPage,
   onLoadMore,
+  loadedCount,
+  totalCount,
 }: LoadMoreProps) => {
   const isDone = !hasNextPage;
   const reduceMotion = useReducedMotion();
+
+  const safeTotal =
+    Number.isFinite(totalCount) && totalCount > 0 ? totalCount : 0;
+  const safeLoaded =
+    Number.isFinite(loadedCount) && loadedCount > 0 ? loadedCount : 0;
+  const progress = isDone
+    ? 100
+    : safeTotal > 0
+      ? Math.min(99, Math.max(0, Math.round((safeLoaded / safeTotal) * 100)))
+      : 0;
+  const valueText = isDone
+    ? `Todos os ${safeTotal} produtos carregados`
+    : safeTotal > 0
+      ? `${safeLoaded} de ${safeTotal} produtos carregados`
+      : "Carregando produtos";
 
   const label = isDone
     ? "Você já viu tudo"
@@ -179,22 +215,24 @@ const LoadMore = ({
   return (
     <LoadMoreWrapper className="load-more">
       <ProgressBar
-        isDone={isDone}
-        isLoading={isFetchingNextPage}
+        $isDone={isDone}
+        $isLoading={isFetchingNextPage}
+        $progress={progress}
         role="progressbar"
-        aria-valuenow={isDone ? 100 : 50}
+        aria-valuenow={progress}
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-label={
-          isDone ? "Todos os produtos carregados" : "Carregando produtos"
-        }
+        aria-valuetext={valueText}
+        aria-label="Progresso do carregamento de produtos"
       />
+      <VisuallyHidden role="status" aria-live="polite">
+        {isFetchingNextPage ? "Carregando mais produtos…" : valueText}
+      </VisuallyHidden>
       <LoadMoreButton
         type="button"
         onClick={onLoadMore}
         disabled={isFetchingNextPage || isDone}
         $isDone={isDone}
-        aria-live="polite"
       >
         {isFetchingNextPage ? (
           <Spinner role="status" aria-label="Carregando" />
