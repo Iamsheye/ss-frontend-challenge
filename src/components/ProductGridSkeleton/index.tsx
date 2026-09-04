@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { PRODUCTS_PAGE_SIZE } from "@/api";
 import ProductGridSkeletonStyles from "./ProductGridSkeletonStyles";
 
@@ -15,8 +16,15 @@ const ProductGridSkeleton = () => {
       aria-label="Carregando produtos"
     >
       <span className="visually-hidden">Carregando produtos...</span>
-      {SKELETON_KEYS.map((key) => (
-        <div key={key} className="skeleton-card" aria-hidden="true">
+      {SKELETON_KEYS.map((key, index) => (
+        <div
+          key={key}
+          className="skeleton-card"
+          aria-hidden="true"
+          style={
+            { "--skeleton-delay": `${(index % 8) * 0.07}s` } as CSSProperties
+          }
+        >
           <div className="skeleton-image" />
           <div className="skeleton-info">
             <div className="skeleton-line title" />

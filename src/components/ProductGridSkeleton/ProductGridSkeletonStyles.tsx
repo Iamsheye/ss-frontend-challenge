@@ -1,12 +1,22 @@
 import styled, { keyframes } from "styled-components";
 
-const pulse = keyframes`
-  0%,
-  100% {
-    opacity: 1;
+const shimmer = keyframes`
+  0% {
+    background-position: 200% 0;
   }
-  50% {
-    opacity: 0.45;
+  100% {
+    background-position: -200% 0;
+  }
+`;
+
+const cardIn = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 `;
 
@@ -33,14 +43,24 @@ const ProductGridSkeletonStyles = styled.div`
     background-color: var(--foreground);
     border-radius: var(--radius-md);
     box-shadow: 0px 1px 2px 0px #0000001a;
+    animation: ${cardIn} 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: var(--skeleton-delay, 0s);
   }
 
   .skeleton-image,
   .skeleton-line,
   .skeleton-price,
   .skeleton-button {
-    background-color: #22232c;
-    animation: ${pulse} 1.4s ease-in-out infinite;
+    background: linear-gradient(
+      100deg,
+      #22232c 30%,
+      #35363f 46%,
+      #2b2c36 54%,
+      #22232c 70%
+    );
+    background-size: 200% 100%;
+    animation: ${shimmer} 1.7s linear infinite;
+    animation-delay: var(--skeleton-delay, 0s);
   }
 
   .skeleton-image {
@@ -89,11 +109,16 @@ const ProductGridSkeletonStyles = styled.div`
   }
 
   @media (prefers-reduced-motion: reduce) {
+    .skeleton-card {
+      animation: none;
+    }
+
     .skeleton-image,
     .skeleton-line,
     .skeleton-price,
     .skeleton-button {
       animation: none;
+      background: #22232c;
     }
   }
 `;

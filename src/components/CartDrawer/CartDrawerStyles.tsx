@@ -1,13 +1,15 @@
 import styled from "styled-components";
+import { motion } from "framer-motion";
 
-export const Backdrop = styled.div`
+export const Backdrop = styled(motion.div)`
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
   z-index: 40;
 `;
 
-export const Drawer = styled.aside`
+export const Drawer = styled(motion.aside)`
   position: fixed;
   top: 0;
   right: 0;
@@ -21,6 +23,7 @@ export const Drawer = styled.aside`
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  will-change: transform;
 
   @media (max-width: 640px) {
     width: 100%;
@@ -42,12 +45,23 @@ export const Drawer = styled.aside`
     flex-shrink: 0;
     display: grid;
     place-items: center;
-    background: transparent;
     border: none;
     border-radius: 50%;
     cursor: pointer;
     color: var(--color-primary);
     background: #373737;
+    transition:
+      transform 0.2s ease,
+      background-color 0.2s ease;
+
+    &:hover {
+      transform: translateX(-2px);
+      background: #424242;
+    }
+
+    &:active {
+      transform: scale(0.94);
+    }
 
     &:focus-visible {
       outline: 2px solid var(--color-primary);
@@ -85,6 +99,7 @@ export const Drawer = styled.aside`
     border-radius: var(--radius-md);
     padding: 16px 20px;
     flex-shrink: 0;
+    will-change: transform, opacity;
   }
 
   .cart-item-image {
@@ -184,10 +199,16 @@ export const Drawer = styled.aside`
     border-radius: 4px;
     color: var(--color-white);
     cursor: pointer;
-    transition: opacity 0.2s ease;
+    transition:
+      opacity 0.2s ease,
+      transform 0.15s ease;
 
     &:hover {
       opacity: 0.7;
+    }
+
+    &:active {
+      transform: scale(0.88);
     }
 
     &:focus-visible {
@@ -218,11 +239,16 @@ export const Drawer = styled.aside`
     cursor: pointer;
     transition:
       color 0.2s ease,
-      background 0.2s ease;
+      background 0.2s ease,
+      transform 0.15s ease;
 
     &:hover {
       color: #ff6b6b;
       background: rgba(255, 255, 255, 0.06);
+    }
+
+    &:active {
+      transform: scale(0.9);
     }
 
     &:focus-visible {
@@ -317,6 +343,14 @@ export const Drawer = styled.aside`
 
     .cart-footer {
       padding: 16px 16px 20px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cart-back,
+    .quantity-btn,
+    .remove-btn {
+      transition: none;
     }
   }
 `;

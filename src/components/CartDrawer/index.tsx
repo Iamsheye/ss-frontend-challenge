@@ -2,10 +2,12 @@
 
 import { useEffect } from "react";
 import Image from "next/image";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowLeft, Minus, Plus, Trash } from "@/assets/icons";
 import { clearCart, removeItem, updateQuantity } from "@/store/cart-slice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { Backdrop, Drawer } from "./CartDrawerStyles";
+import AnimatedValue from "@/components/AnimatedNumber";
 import CheckoutButton from "./CheckoutButton";
 
 export interface CartDrawerProps {
@@ -25,9 +27,18 @@ function formatTotal(value: number): string {
   return `${value.toFixed(2)} ETH`;
 }
 
+const DRAWER_TRANSITION = {
+  type: "tween" as const,
+  duration: 0.34,
+  ease: [0.22, 1, 0.36, 1] as const,
+};
+
+const BACKDROP_TRANSITION = { duration: 0.25, ease: "easeOut" as const };
+
 const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
   const dispatch = useAppDispatch();
   const items = useAppSelector((state) => state.cart.items);
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     if (!open) return;
@@ -43,151 +54,247 @@ const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
     };
   }, [open, onClose]);
 
-  if (!open) return null;
-
   const total = items.reduce((sum, item) => {
     const price = Number.parseFloat(item.product.price);
     return sum + (Number.isNaN(price) ? 0 : price * item.quantity);
   }, 0);
 
+  const listVariants = reduceMotion
+    ? { hidden: {}, show: {} }
+    : {
+        hidden: {},
+        show: { transition: { staggerChildren: 0.055, delayChildren: 0.1 } },
+      };
+
+  const itemVariants = reduceMotion
+    ? {
+        hidden: { opacity: 0 },
+        show: { opacity: 1 },
+        exit: { opacity: 0 },
+      }
+    : {
+        hidden: { opacity: 0, y: 22, scale: 0.98 },
+        show: {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          transition: { type: "spring" as const, stiffness: 380, damping: 32 },
+        },
+        exit: {
+          opacity: 0,
+          x: 72,
+          scale: 0.97,
+          transition: { duration: 0.22, ease: "easeIn" as const },
+        },
+      };
+
   return (
-    <>
-      <Backdrop onClick={onClose} aria-hidden="true" />
-      <Drawer role="dialog" aria-modal="true" aria-label="Mochila de Compras">
-        <div className="cart-header">
-          <button
-            type="button"
-            className="cart-back"
+    <AnimatePresence>
+      {open ? (
+        <>
+          <Backdrop
+            key="cart-backdrop"
             onClick={onClose}
-            aria-label="Voltar e fechar carrinho"
-            autoFocus
+            aria-hidden="true"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={BACKDROP_TRANSITION}
+          />
+          <Drawer
+            key="cart-drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Mochila de Compras"
+            initial={reduceMotion ? { opacity: 0 } : { x: "100%" }}
+            animate={reduceMotion ? { opacity: 1 } : { x: 0 }}
+            exit={reduceMotion ? { opacity: 0 } : { x: "100%" }}
+            transition={reduceMotion ? { duration: 0.18 } : DRAWER_TRANSITION}
+            drag={reduceMotion ? false : "x"}
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.12}
+            dragMomentum={false}
+            onDragEnd={(_, info) => {
+              if (info.offset.x > 110 || info.velocity.x > 550) onClose();
+            }}
           >
-            <ArrowLeft />
-          </button>
-          <h2 className="cart-title">Mochila de Compras</h2>
-        </div>
+            <div className="cart-header">
+              <button
+                type="button"
+                className="cart-back"
+                onClick={onClose}
+                aria-label="Voltar e fechar carrinho"
+                autoFocus
+              >
+                <ArrowLeft />
+              </button>
+              <h2 className="cart-title">Mochila de Compras</h2>
+            </div>
 
-        {items.length === 0 ? (
-          <div className="cart-empty">
-            <p>Sua mochila está vazia.</p>
-          </div>
-        ) : (
-          <>
-            <div className="cart-items">
-              {items.map(({ product, quantity }) => (
-                <div key={product.id} className="cart-item">
-                  <div className="cart-item-image">
-                    {product.image ? (
+            {items.length === 0 ? (
+              <motion.div
+                className="cart-empty"
+                initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 12 }}
+                animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.1 }}
+              >
+                <p>Sua mochila está vazia.</p>
+              </motion.div>
+            ) : (
+              <>
+                <motion.div
+                  className="cart-items"
+                  variants={listVariants}
+                  initial="hidden"
+                  animate="show"
+                >
+                  <AnimatePresence initial={false}>
+                    {items.map(({ product, quantity }) => (
+                      <motion.div
+                        key={product.id}
+                        className="cart-item"
+                        variants={itemVariants}
+                        layout={!reduceMotion}
+                        exit="exit"
+                      >
+                        <div className="cart-item-image">
+                          {product.image ? (
+                            <Image
+                              src={product.image}
+                              alt={product.name}
+                              fill
+                              sizes="140px"
+                            />
+                          ) : (
+                            <span
+                              aria-hidden="true"
+                              className="cart-item-fallback"
+                            >
+                              {product.name.charAt(0)}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="cart-item-info">
+                          <div>
+                            <h3 className="cart-item-name">{product.name}</h3>
+                            <p className="cart-item-description">
+                              {product.description}
+                            </p>
+                          </div>
+
+                          <div className="cart-item-price">
+                            <Image
+                              height={24}
+                              width={24}
+                              alt=""
+                              aria-hidden="true"
+                              src="/images/eth.png"
+                            />
+                            <span className="amount">
+                              {formatPrice(product.price)}
+                            </span>
+                          </div>
+
+                          <div className="cart-item-bottom">
+                            <div className="quantity">
+                              <button
+                                type="button"
+                                className="quantity-btn"
+                                aria-label={`Diminuir quantidade de ${product.name}`}
+                                onClick={() =>
+                                  dispatch(
+                                    updateQuantity({
+                                      id: product.id,
+                                      quantity: quantity - 1,
+                                    }),
+                                  )
+                                }
+                              >
+                                <Minus />
+                              </button>
+                              <AnimatedValue
+                                value={quantity}
+                                className="quantity-value"
+                                ariaLabel={`Quantidade: ${quantity}`}
+                                distance={10}
+                              />
+                              <button
+                                type="button"
+                                className="quantity-btn"
+                                aria-label={`Aumentar quantidade de ${product.name}`}
+                                onClick={() =>
+                                  dispatch(
+                                    updateQuantity({
+                                      id: product.id,
+                                      quantity: quantity + 1,
+                                    }),
+                                  )
+                                }
+                              >
+                                <Plus />
+                              </button>
+                            </div>
+
+                            <button
+                              type="button"
+                              className="remove-btn"
+                              aria-label={`Remover ${product.name} do carrinho`}
+                              onClick={() => dispatch(removeItem(product.id))}
+                            >
+                              <Trash />
+                            </button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </motion.div>
+
+                <motion.div
+                  className="cart-footer"
+                  initial={
+                    reduceMotion ? { opacity: 0 } : { opacity: 0, y: 18 }
+                  }
+                  animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+                  transition={
+                    reduceMotion
+                      ? { duration: 0.18 }
+                      : {
+                          type: "spring",
+                          stiffness: 320,
+                          damping: 30,
+                          delay: 0.16,
+                        }
+                  }
+                >
+                  <div className="cart-total">
+                    <p className="cart-total-label">Total</p>
+                    <div className="cart-total-price">
                       <Image
-                        src={product.image}
-                        alt={product.name}
-                        fill
-                        sizes="140px"
-                      />
-                    ) : (
-                      <span aria-hidden="true" className="cart-item-fallback">
-                        {product.name.charAt(0)}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="cart-item-info">
-                    <div>
-                      <h3 className="cart-item-name">{product.name}</h3>
-                      <p className="cart-item-description">
-                        {product.description}
-                      </p>
-                    </div>
-
-                    <div className="cart-item-price">
-                      <Image
-                        height={24}
-                        width={24}
+                        height={28}
+                        width={28}
                         alt=""
                         aria-hidden="true"
                         src="/images/eth.png"
                       />
-                      <span className="amount">
-                        {formatPrice(product.price)}
-                      </span>
-                    </div>
-
-                    <div className="cart-item-bottom">
-                      <div className="quantity">
-                        <button
-                          type="button"
-                          className="quantity-btn"
-                          aria-label={`Diminuir quantidade de ${product.name}`}
-                          onClick={() =>
-                            dispatch(
-                              updateQuantity({
-                                id: product.id,
-                                quantity: quantity - 1,
-                              }),
-                            )
-                          }
-                        >
-                          <Minus />
-                        </button>
-                        <span
-                          className="quantity-value"
-                          aria-live="polite"
-                          aria-label={`Quantidade: ${quantity}`}
-                        >
-                          {quantity}
-                        </span>
-                        <button
-                          type="button"
-                          className="quantity-btn"
-                          aria-label={`Aumentar quantidade de ${product.name}`}
-                          onClick={() =>
-                            dispatch(
-                              updateQuantity({
-                                id: product.id,
-                                quantity: quantity + 1,
-                              }),
-                            )
-                          }
-                        >
-                          <Plus />
-                        </button>
-                      </div>
-
-                      <button
-                        type="button"
-                        className="remove-btn"
-                        aria-label={`Remover ${product.name} do carrinho`}
-                        onClick={() => dispatch(removeItem(product.id))}
-                      >
-                        <Trash />
-                      </button>
+                      <AnimatedValue
+                        value={formatTotal(total)}
+                        className="amount"
+                        ariaLabel={`Total: ${formatTotal(total)}`}
+                        distance={16}
+                      />
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
 
-            <div className="cart-footer">
-              <div className="cart-total">
-                <p className="cart-total-label">Total</p>
-                <div className="cart-total-price">
-                  <Image
-                    height={28}
-                    width={28}
-                    alt=""
-                    aria-hidden="true"
-                    src="/images/eth.png"
-                  />
-                  <span className="amount">{formatTotal(total)}</span>
-                </div>
-              </div>
-
-              <CheckoutButton onCompleted={() => dispatch(clearCart())} />
-            </div>
-          </>
-        )}
-      </Drawer>
-    </>
+                  <CheckoutButton onCompleted={() => dispatch(clearCart())} />
+                </motion.div>
+              </>
+            )}
+          </Drawer>
+        </>
+      ) : null}
+    </AnimatePresence>
   );
 };
 

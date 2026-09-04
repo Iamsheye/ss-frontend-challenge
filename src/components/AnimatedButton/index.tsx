@@ -2,52 +2,74 @@
 
 import { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
-import { AnimatePresence, motion } from "framer-motion";
-import { Button } from "../Button";
+import {
+  AnimatePresence,
+  motion,
+  useAnimation,
+  useReducedMotion,
+} from "framer-motion";
+import type { MouseEventHandler } from "react";
 
-const StyledAnimatedButton = styled(Button)<{
+const StyledAnimatedButton = styled(motion.button)<{
   $active: boolean;
   $activeBackground: string;
 }>`
+  background-color: var(--color-primary);
+  color: var(--color-white);
+  padding: 16px 0;
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
+  box-shadow: 0px 50px 100px -20px #32325d40;
+
+  font-weight: 600;
+  font-size: 1rem;
+  line-height: 140%;
+
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
   overflow: hidden;
-  transition:
-    background-color 0.3s ease,
-    transform 0.2s ease;
+  padding-left: 16px;
+  padding-right: 16px;
+  transition: background-color 0.28s ease;
 
   ${({ $active, $activeBackground }) =>
     $active &&
     `
     background-color: ${$activeBackground};
-    animation: action-feedback-pop 0.45s ease;
   `}
 
-  ${({ $active }) =>
-    !$active &&
-    `
-    &:active {
-      transform: scale(0.98);
-    }
-  `}
-
-  .action-feedback-label {
-    display: inline-block;
-    will-change: transform, opacity;
+  &:disabled {
+    cursor: default;
   }
 
-  @keyframes action-feedback-pop {
-    0% {
-      transform: scale(1);
-    }
-    40% {
-      transform: scale(1.04);
-    }
-    100% {
-      transform: scale(1);
-    }
+  &:focus-visible {
+    outline: 2px solid var(--color-white);
+    outline-offset: 2px;
+  }
+
+  .action-feedback-viewport {
+    display: grid;
+    justify-items: center;
+    align-items: center;
+    overflow: hidden;
+    max-width: 100%;
+  }
+
+  .action-feedback-label {
+    grid-area: 1 / 1;
+    display: inline-block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    will-change: transform, opacity, filter;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: background-color 0.15s ease;
   }
 `;
 
@@ -66,7 +88,15 @@ export interface AnimatedButtonProps {
   /** Called when the active duration elapses, inside the timeout callback. */
   onCompleted?: () => void;
   className?: string;
+  onClick?: MouseEventHandler<HTMLButtonElement>;
 }
+
+const LABEL_TRANSITION = {
+  type: "spring" as const,
+  stiffness: 550,
+  damping: 38,
+  mass: 0.8,
+};
 
 const AnimatedButton = ({
   idleLabel,
@@ -77,9 +107,12 @@ const AnimatedButton = ({
   onPress,
   onCompleted,
   className,
+  onClick,
 }: AnimatedButtonProps) => {
   const [isActive, setIsActive] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const controls = useAnimation();
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     return () => {
@@ -87,10 +120,18 @@ const AnimatedButton = ({
     };
   }, []);
 
-  const handlePress = () => {
+  const handlePress: MouseEventHandler<HTMLButtonElement> = (event) => {
+    onClick?.(event);
+    if (event.defaultPrevented) return;
     if (isActive && !retrigger) return;
     setIsActive(true);
     onPress?.();
+    if (!reduceMotion) {
+      controls.start({
+        scale: [1, 1.045, 1],
+        transition: { duration: 0.38, ease: [0.22, 1, 0.36, 1] },
+      });
+    }
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(() => {
       setIsActive(false);
@@ -105,24 +146,36 @@ const AnimatedButton = ({
       $activeBackground={activeBackground}
       onClick={handlePress}
       className={className}
+      animate={controls}
+      whileTap={reduceMotion ? undefined : { scale: 0.97 }}
+      whileHover={reduceMotion || isActive ? undefined : { scale: 1.015 }}
     >
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.span
-          key={isActive ? "active" : "idle"}
-          className="action-feedback-label"
-          aria-live="polite"
-          initial={{ y: 14, opacity: 0, scale: 0.92 }}
-          animate={{ y: 0, opacity: 1, scale: 1 }}
-          exit={{ y: -14, opacity: 0, scale: 0.92 }}
-          transition={{
-            type: "spring",
-            stiffness: 500,
-            damping: 32,
-          }}
-        >
-          {isActive ? activeLabel : idleLabel}
-        </motion.span>
-      </AnimatePresence>
+      <span className="action-feedback-viewport" aria-live="polite">
+        <AnimatePresence mode="popLayout" initial={false}>
+          <motion.span
+            key={isActive ? "active" : "idle"}
+            className="action-feedback-label"
+            initial={
+              reduceMotion
+                ? { opacity: 0 }
+                : { y: 18, opacity: 0, filter: "blur(4px)", scale: 0.96 }
+            }
+            animate={
+              reduceMotion
+                ? { opacity: 1 }
+                : { y: 0, opacity: 1, filter: "blur(0px)", scale: 1 }
+            }
+            exit={
+              reduceMotion
+                ? { opacity: 0 }
+                : { y: -18, opacity: 0, filter: "blur(4px)", scale: 0.96 }
+            }
+            transition={reduceMotion ? { duration: 0.15 } : LABEL_TRANSITION}
+          >
+            {isActive ? activeLabel : idleLabel}
+          </motion.span>
+        </AnimatePresence>
+      </span>
     </StyledAnimatedButton>
   );
 };

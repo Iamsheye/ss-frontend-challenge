@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
+import { motion, useReducedMotion } from "framer-motion";
 import HeaderStyles, { CartButton } from "./HeaderStyles";
 import { Logo, CartIcon } from "@/assets/icons";
 import { useAppSelector } from "@/store/hooks";
+import AnimatedValue from "@/components/AnimatedNumber";
 
 const CartDrawer = dynamic(() => import("@/components/CartDrawer"), {
   ssr: true,
@@ -15,6 +17,7 @@ const Header = () => {
   const cartCount = useAppSelector((state) =>
     state.cart.items.reduce((total, item) => total + item.quantity, 0),
   );
+  const reduceMotion = useReducedMotion();
 
   return (
     <>
@@ -31,7 +34,23 @@ const Header = () => {
           >
             <CartIcon />
 
-            <span className="cart-count">{cartCount}</span>
+            <motion.span
+              key={reduceMotion ? "static" : cartCount}
+              className="cart-count"
+              initial={reduceMotion ? false : { scale: 0.45 }}
+              animate={{ scale: 1 }}
+              transition={
+                reduceMotion
+                  ? undefined
+                  : { type: "spring", stiffness: 550, damping: 22 }
+              }
+            >
+              <AnimatedValue
+                value={cartCount}
+                ariaLabel={`${cartCount} ${cartCount === 1 ? "item" : "itens"}`}
+                distance={10}
+              />
+            </motion.span>
           </CartButton>
         </nav>
       </HeaderStyles>

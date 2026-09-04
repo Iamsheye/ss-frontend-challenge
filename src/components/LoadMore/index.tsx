@@ -1,6 +1,7 @@
 "use client";
 
 import styled, { keyframes } from "styled-components";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { DarkButton } from "../Button";
 
 export interface LoadMoreProps {
@@ -17,6 +18,15 @@ const spin = keyframes`
   }
 `;
 
+const barShimmer = keyframes`
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(250%);
+  }
+`;
+
 const Spinner = styled.span`
   width: 20px;
   height: 20px;
@@ -25,6 +35,10 @@ const Spinner = styled.span`
   border-top-color: var(--color-white);
   animation: ${spin} 0.7s linear infinite;
   flex-shrink: 0;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation-duration: 1.4s;
+  }
 `;
 
 const LoadMoreWrapper = styled.div`
@@ -38,6 +52,7 @@ const LoadMoreWrapper = styled.div`
 
 interface ProgressProps {
   isDone: boolean;
+  isLoading?: boolean;
 }
 
 const ProgressBar = styled.div<ProgressProps>`
@@ -57,7 +72,38 @@ const ProgressBar = styled.div<ProgressProps>`
     height: 100%;
     background-color: var(--color-primary);
     border-radius: var(--radius-md);
-    transition: width 0.3s ease-in-out;
+    transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    width: 40%;
+    background: linear-gradient(
+      100deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.35) 50%,
+      transparent 100%
+    );
+    opacity: ${({ isDone, isLoading }) => (!isDone && isLoading ? 1 : 0)};
+    animation: ${({ isDone, isLoading }) =>
+      !isDone && isLoading ? barShimmer : "none"};
+    animation-duration: 1.2s;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    transition: opacity 0.3s ease;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &::before {
+      transition: none;
+    }
+
+    &::after {
+      animation: none;
+      opacity: 0;
+    }
   }
 `;
 
@@ -66,10 +112,45 @@ const LoadMoreButton = styled(DarkButton)<{ $isDone?: boolean }>`
   align-items: center;
   justify-content: center;
   gap: 12px;
+  overflow: hidden;
+  transition:
+    transform 0.18s ease,
+    opacity 0.25s ease,
+    background-color 0.25s ease;
+
+  &:not(:disabled):hover {
+    transform: translateY(-1px);
+  }
+
+  &:not(:disabled):active {
+    transform: scale(0.97);
+  }
 
   &:disabled {
     cursor: default;
     opacity: ${({ $isDone }) => ($isDone ? 1 : 0.85)};
+  }
+
+  .load-more-viewport {
+    display: grid;
+    justify-items: center;
+    align-items: center;
+    overflow: hidden;
+  }
+
+  .load-more-label {
+    grid-area: 1 / 1;
+    white-space: nowrap;
+    will-change: transform, opacity;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: opacity 0.2s ease;
+
+    &:not(:disabled):hover,
+    &:not(:disabled):active {
+      transform: none;
+    }
   }
 `;
 
@@ -87,6 +168,7 @@ const LoadMore = ({
   onLoadMore,
 }: LoadMoreProps) => {
   const isDone = !hasNextPage;
+  const reduceMotion = useReducedMotion();
 
   const label = isDone
     ? "Você já viu tudo"
@@ -98,6 +180,7 @@ const LoadMore = ({
     <LoadMoreWrapper className="load-more">
       <ProgressBar
         isDone={isDone}
+        isLoading={isFetchingNextPage}
         role="progressbar"
         aria-valuenow={isDone ? 100 : 50}
         aria-valuemin={0}
@@ -116,7 +199,25 @@ const LoadMore = ({
         {isFetchingNextPage ? (
           <Spinner role="status" aria-label="Carregando" />
         ) : null}
-        {label}
+        <span className="load-more-viewport">
+          <AnimatePresence mode="popLayout" initial={false}>
+            <motion.span
+              key={label}
+              className="load-more-label"
+              initial={reduceMotion ? { opacity: 0 } : { y: 12, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={reduceMotion ? { opacity: 0 } : { y: -12, opacity: 0 }}
+              transition={
+                reduceMotion
+                  ? { duration: 0.15 }
+                  : { type: "spring", stiffness: 550, damping: 38 }
+              }
+              style={{ gridArea: "1 / 1" }}
+            >
+              {label}
+            </motion.span>
+          </AnimatePresence>
+        </span>
       </LoadMoreButton>
     </LoadMoreWrapper>
   );
