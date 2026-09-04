@@ -3,10 +3,10 @@
 import { useEffect } from "react";
 import Image from "next/image";
 import { ArrowLeft, Minus, Plus, Trash } from "@/assets/icons";
-import { removeItem, updateQuantity } from "@/store/cart-slice";
+import { clearCart, removeItem, updateQuantity } from "@/store/cart-slice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { Button } from "../Button";
 import { Backdrop, Drawer } from "./CartDrawerStyles";
+import CheckoutButton from "./CheckoutButton";
 
 export interface CartDrawerProps {
   open: boolean;
@@ -182,9 +182,7 @@ const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
                 </div>
               </div>
 
-              <Button type="button" className="checkout-btn">
-                FINALIZAR COMPRA
-              </Button>
+              <CheckoutButton onCompleted={() => dispatch(clearCart())} />
             </div>
           </>
         )}

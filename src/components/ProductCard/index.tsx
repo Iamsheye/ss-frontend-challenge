@@ -2,10 +2,8 @@
 
 import Image from "next/image";
 import type { Product } from "@/api";
-import { useAppDispatch } from "@/store/hooks";
-import { addItem } from "@/store/cart-slice";
-import { Button } from "../Button";
 import ProductCardStyles from "./ProductCardStyles";
+import AddToCartButton from "./AddToCartButton";
 
 export interface ProductCardProps {
   product: Product;
@@ -19,12 +17,6 @@ function formatPrice(price: string): string {
 }
 
 const ProductCard = ({ product }: ProductCardProps) => {
-  const dispatch = useAppDispatch();
-
-  const handleBuy = () => {
-    dispatch(addItem(product));
-  };
-
   return (
     <ProductCardStyles>
       <div className="product-image">
@@ -57,9 +49,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
             <span className="amount">{formatPrice(product.price)}</span>
           </div>
 
-          <Button type="button" onClick={handleBuy}>
-            COMPRAR
-          </Button>
+          <AddToCartButton product={product} />
         </div>
       </div>
     </ProductCardStyles>

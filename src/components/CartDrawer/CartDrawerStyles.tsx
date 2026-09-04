@@ -269,15 +269,6 @@ export const Drawer = styled.aside`
     }
   }
 
-  .checkout-btn {
-    width: 100%;
-    min-height: 72px;
-    font-family: var(--font-lato);
-    font-size: 1rem;
-    font-weight: 700;
-    line-height: 140%;
-  }
-
   .cart-empty {
     flex: 1;
     display: flex;
@@ -326,10 +317,6 @@ export const Drawer = styled.aside`
 
     .cart-footer {
       padding: 16px 16px 20px;
-    }
-
-    .checkout-btn {
-      min-height: 64px;
     }
   }
 `;
