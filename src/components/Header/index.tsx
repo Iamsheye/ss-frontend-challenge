@@ -1,10 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import CartDrawer from "@/components/CartDrawer";
+import dynamic from "next/dynamic";
 import HeaderStyles, { CartButton } from "./HeaderStyles";
 import { Logo, CartIcon } from "@/assets/icons";
 import { useAppSelector } from "@/store/hooks";
+
+const CartDrawer = dynamic(() => import("@/components/CartDrawer"), {
+  ssr: true,
+});
 
 const Header = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);
