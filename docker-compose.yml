@@ -30,6 +30,9 @@ services:
       HOSTNAME: 0.0.0.0
       PORT: 3000
       NEXT_TELEMETRY_DISABLED: 1
+      # Default API URL so `docker compose up` works with zero config.
+      # Override by setting it in a local `.env` file.
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-https://api-challenge.starsoft.games/api/v1}
       # Reliable file watching inside Docker Desktop (macOS / Windows).
       CHOKIDAR_USEPOLLING: "true"
       WATCHPACK_POLLING: "true"
@@ -45,6 +48,10 @@ services:
       context: .
       dockerfile: Dockerfile
       target: production
+      # NEXT_PUBLIC_* vars are inlined at build time, so the builder needs
+      # them as build args (runtime `environment` alone is not enough).
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-https://api-challenge.starsoft.games/api/v1}
     container_name: ss-frontend-challenge-web-prod
     ports:
       - "3000:3000"
@@ -53,4 +60,5 @@ services:
       HOSTNAME: 0.0.0.0
       PORT: 3000
       NEXT_TELEMETRY_DISABLED: 1
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-https://api-challenge.starsoft.games/api/v1}
     restart: unless-stopped

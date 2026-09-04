@@ -20,11 +20,7 @@ export interface InfiniteProductsFilters {
  * do not duplicate them at call sites.
  */
 export function infiniteProductsOptions(filters: InfiniteProductsFilters = {}) {
-  const {
-    sortBy = "id",
-    orderBy = "ASC",
-    rows = PRODUCTS_PAGE_SIZE,
-  } = filters;
+  const { sortBy = "id", orderBy = "ASC", rows = PRODUCTS_PAGE_SIZE } = filters;
 
   return infiniteQueryOptions({
     queryKey: productKeys.infinite({ sortBy, orderBy, rows }),

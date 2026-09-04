@@ -10,7 +10,10 @@ export interface AddToCartButtonProps {
   duration?: number;
 }
 
-const AddToCartButton = ({ product, duration = 2200 }: AddToCartButtonProps) => {
+const AddToCartButton = ({
+  product,
+  duration = 2200,
+}: AddToCartButtonProps) => {
   const dispatch = useAppDispatch();
 
   return (

@@ -53,6 +53,21 @@ challenge spec.
 - Docker 24+ with Docker Compose v2 (for containerized development)
 - Port `3000` free
 
+## Environment variables
+
+| Variable                   | Required | Default (see `.env.example`)                  |
+| -------------------------- | -------- | --------------------------------------------- |
+| `NEXT_PUBLIC_API_BASE_URL` | Yes      | `https://api-challenge.starsoft.games/api/v1` |
+
+```bash
+cp .env.example .env
+```
+
+Docker Compose already sets a default for this variable (overridable via
+your local `.env`), so `docker compose up` works without extra steps. For
+local runs, copy `.env.example` to `.env` first — without it the product
+list renders an error state (`Missing NEXT_PUBLIC_API_BASE_URL`).
+
 ## Running with Docker (recommended)
 
 Single command:
@@ -97,9 +112,9 @@ docker compose --profile prod up --build web-prod
 - **File watching:** `CHOKIDAR_USEPOLLING=true` and `WATCHPACK_POLLING=true`
   make reloads reliable under Docker Desktop (macOS/Windows).
 - **Telemetry:** `NEXT_TELEMETRY_DISABLED=1`.
-- **No** `.env` **required:** no secrets are needed today; Compose already provides
-  the dev vars. If API URLs/keys are added later, put them in a local `.env`
-  (already git- and docker-ignored).
+- **API URL:** Compose provides a default `NEXT_PUBLIC_API_BASE_URL` (same
+  value as `.env.example`); set it in a local `.env` (already git- and
+  docker-ignored) to override.
 - **Troubleshooting:** port conflict on `3000` → stop the other process or
   remap the port in `docker-compose.yml` (e.g. `"3001:3000"`); after changing
   `package.json`, rerun with `--build` to reinstall dependencies.
@@ -107,6 +122,7 @@ docker compose --profile prod up --build web-prod
 ## Running locally (without Docker)
 
 ```bash
+cp .env.example .env
 npm ci
 npm run dev
 ```
@@ -137,6 +153,31 @@ Vitest + React Testing Library (`vitest.config.mts`, `vitest.setup.ts`).
   `Header` (badge count + drawer open/close), `HomeClient` (skeleton, error +
   retry, empty, grid + load-more, `?page=N` sync), `AnimatedButton` /
   `CheckoutButton` (success feedback + completion callbacks).
+
+  Note: the spec asks for Jest; this repo uses Vitest instead. The API is
+  intentionally Jest-compatible (`describe/it/expect` + React Testing
+  Library), so the tests read like Jest tests while running an order of
+  magnitude faster with native ESM/TypeScript support.
+
+## Known limitations and future improvements
+
+- **No product-detail route:** the challenge suggests dynamic routes for NFT
+  details, but the Figma scope is listing + cart and the app implements only
+  `/`. A `/products/[id]` route (SSR prefetch + `generateMetadata` for SEO)
+  would be the natural next step if a detail design is added.
+- **No Next.js API Routes:** none were needed — the app talks directly to the
+  external Starsoft API via the `apiFetch` wrapper.
+- **Mock checkout:** `FINALIZAR COMPRA` only plays a success animation and
+  clears the cart; there is no checkout backend or order persistence.
+- **Cart is in-memory only:** cart state lives in Redux and is lost on page
+  reload. Persisting it (e.g. `localStorage` via `redux-persist` or a
+  subscriber) would be a straightforward improvement.
+- **Server prefetch capped at 5 pages:** `?page=N` values above 5 are clamped
+  (`MAX_PREFETCH_PAGES` in `src/app/page.tsx`) to bound SSR work; deeper
+  restores continue client-side.
+- **No E2E tests:** coverage is unit + integration with mocked network. Adding
+  Playwright flows (browse → add to cart → checkout) would cover the real API
+  path.
 
 ## Tech stack
 

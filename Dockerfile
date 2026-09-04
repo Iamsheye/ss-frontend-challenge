@@ -54,6 +54,8 @@ CMD ["npm", "run", "dev", "--", "-H", "0.0.0.0", "-p", "3000"]
 # ---------------------------------------------------------------------------
 FROM base AS builder
 ENV NODE_ENV=production
+ARG NEXT_PUBLIC_API_BASE_URL=https://api-challenge.starsoft.games/api/v1
+ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
