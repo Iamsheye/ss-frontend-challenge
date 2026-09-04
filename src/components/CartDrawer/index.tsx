@@ -3,6 +3,7 @@
 import { useEffect, useRef, type Ref } from "react";
 import Image from "next/image";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import type { PanInfo } from "framer-motion";
 import { ArrowLeft, Minus, Plus, Trash } from "@/assets/icons";
 import { clearCart, removeItem, updateQuantity } from "@/store/cart-slice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -34,6 +35,19 @@ const DRAWER_TRANSITION = {
 };
 
 const BACKDROP_TRANSITION = { duration: 0.25, ease: "easeOut" as const };
+
+/**
+ * Swipe-to-close predicate for the drawer drag gesture.
+ *
+ * Extracted as a pure exported handler factory so the thresholds
+ * (`offset.x > 110 || velocity.x > 550`) are unit-testable without
+ * simulating pointer drags in jsdom.
+ */
+export function createCartDragEndHandler(onClose: () => void) {
+  return (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    if (info.offset.x > 110 || info.velocity.x > 550) onClose();
+  };
+}
 
 const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
   const dispatch = useAppDispatch();
@@ -153,9 +167,7 @@ const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={0.12}
             dragMomentum={false}
-            onDragEnd={(_, info) => {
-              if (info.offset.x > 110 || info.velocity.x > 550) onClose();
-            }}
+            onDragEnd={createCartDragEndHandler(onClose)}
           >
             <div className="cart-header">
               <button

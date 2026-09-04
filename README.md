@@ -7,57 +7,51 @@ challenge spec.
 ## Implemented features
 
 - **Product listing:** SSR-prefetched infinite list (`GET /products`,
-8 items per page) with load-more footer and real determinate progress
-(`loadedCount / totalCount`).
+  8 items per page) with load-more footer and real determinate progress
+  (`loadedCount / totalCount`).
 - **URL-synced pagination depth:** loaded page count is mirrored to
-`?page=N` via `router.replace` (no scroll reset), so refreshes and shared
-links restore list depth. The server reads `?page=N` and prefetches N pages.
+  `?page=N` via `router.replace` (no scroll reset), so refreshes and shared
+  links restore list depth. The server reads `?page=N` and prefetches N pages.
 - **Cart (Redux Toolkit):** add from product cards, quantity +/− (≤0 removes),
-remove per item, live total in ETH, empty state.
+  remove per item, live total in ETH, empty state.
 - **Cart drawer:** slide-in dialog with backdrop, Esc-to-close, focus trap +
-focus return, body scroll-lock, swipe-to-close, staggered item animations,
-all `prefers-reduced-motion` aware.
+  focus return, body scroll-lock, swipe-to-close, staggered item animations,
+  all `prefers-reduced-motion` aware.
 - **States:** SSR first paint (no spinner for initial view), skeleton while
-pending, error + retry UI, empty-list UI.
+  pending, error + retry UI, empty-list UI.
 - **Checkout (mock):** `FINALIZAR COMPRA` plays a success animation then clears
-the cart. There is no checkout backend — this is a UI mock, not a purchase.
-
-
+  the cart. There is no checkout backend — this is a UI mock, not a purchase.
 
 ## Tech stack and rationale
 
 - **Next.js 16 (App Router, Turbopack) · React 19 · TypeScript** — SSR via an
-async Server Component (`src/app/page.tsx`) that prefetches the TanStack
-Query infinite cache and hydrates via `HydrationBoundary`. This is the
-App Router equivalent of `getServerSideProps` (which does not exist in App
-Router). `loading.tsx` provides the Suspense fallback.
+  async Server Component (`src/app/page.tsx`) that prefetches the TanStack
+  Query infinite cache and hydrates via `HydrationBoundary`. This is the
+  App Router equivalent of `getServerSideProps` (which does not exist in App
+  Router). `loading.tsx` provides the Suspense fallback.
 - **Redux Toolkit + react-redux** — global cart state (`addItem / removeItem / updateQuantity / clearCart`) with typed hooks. Cart-only scope matches the
-spec; server state stays in React Query.
+  spec; server state stays in React Query.
 - **TanStack React Query v5** — shared `infiniteProductsOptions()` used by both
-the server prefetch and `useInfiniteProducts`, so query keys never drift.
-`getNextPageParam` stops on `loadedSoFar >= count` or short pages.
+  the server prefetch and `useInfiniteProducts`, so query keys never drift.
+  `getNextPageParam` stops on `loadedSoFar >= count` or short pages.
 - **Framer Motion** — drawer slide, list stagger, button feedback, rolling
-numbers. Gated behind `useReducedMotion` / `MotionConfig reducedMotion="user"`.
+  numbers. Gated behind `useReducedMotion` / `MotionConfig reducedMotion="user"`.
 - **Styled Components + SASS** — component styles in co-located `*Styles.tsx`
-modules with CSS-var tokens; SASS for `globals.scss` / variables. No
-Tailwind in this project.
+  modules with CSS-var tokens; SASS for `globals.scss` / variables. No
+  Tailwind in this project.
 - **next/image + next/font** — optimized product/cart images (`remotePatterns`
-for the API image host) and self-hosted Poppins/IBM Plex Sans/Lato.
+  for the API image host) and self-hosted Poppins/IBM Plex Sans/Lato.
 - **Dynamic import** — `CartDrawer` loads via `next/dynamic` with `ssr: false`
-(client-only: uses `document`, drag, focus management), keeping it out of
-the initial bundle.
+  (client-only: uses `document`, drag, focus management), keeping it out of
+  the initial bundle.
 - **ESLint + Prettier** — `npm run lint`, `npm run format` / `format:check`.
-Prettier uses the default config (`.prettierrc.json`)
-
-
+  Prettier uses the default config (`.prettierrc.json`)
 
 ## Prerequisites
 
 - Node.js 20+ and npm (for local development), **or**
 - Docker 24+ with Docker Compose v2 (for containerized development)
 - Port `3000` free
-
-
 
 ## Running with Docker (recommended)
 
@@ -69,7 +63,6 @@ docker compose up
 
 Then open [http://localhost:3000](http://localhost:3000).
 
-
 | Command                      | Purpose                                                     |
 | ---------------------------- | ----------------------------------------------------------- |
 | `docker compose up`          | Start the dev server with hot-reload                        |
@@ -78,43 +71,38 @@ Then open [http://localhost:3000](http://localhost:3000).
 | `docker compose logs -f web` | Follow the Next.js logs                                     |
 | `docker compose down`        | Stop and remove containers                                  |
 
-
 Production preview (optimized build served with `next start`):
 
 ```bash
 docker compose --profile prod up --build web-prod
 ```
 
-
-
 ### Docker configuration specifics
 
 - **Files:** `Dockerfile` (multi-stage), `docker-compose.yml` (orchestration),
-`.dockerignore` (build context exclusions).
+  `.dockerignore` (build context exclusions).
 - **Stages in** `Dockerfile`**:** `deps` (all deps via `npm ci`) → `development`
-(default, runs `next dev -H 0.0.0.0 -p 3000`) → `builder` (`npm run build`) →
-`prod-deps` (`npm ci --omit=dev`) → `production` (non-root `nextjs` user,
-serves `next start`). Base image is `node:22-alpine` (overridable with the
-`NODE_VERSION` build arg); `libc6-compat` is installed for Next.js/SWC on
-Alpine.
+  (default, runs `next dev -H 0.0.0.0 -p 3000`) → `builder` (`npm run build`) →
+  `prod-deps` (`npm ci --omit=dev`) → `production` (non-root `nextjs` user,
+  serves `next start`). Base image is `node:22-alpine` (overridable with the
+  `NODE_VERSION` build arg); `libc6-compat` is installed for Next.js/SWC on
+  Alpine.
 - **Only one service is required:** the Next.js app (`web`). No database or
-external infra exists, so there is nothing else to orchestrate.
+  external infra exists, so there is nothing else to orchestrate.
 - **Hot-reload:** source is bind-mounted (`.:/app`); `node_modules` and `.next`
-use anonymous volumes so the host never shadows or clobbers the container's
-copies.
+  use anonymous volumes so the host never shadows or clobbers the container's
+  copies.
 - **Networking:** `HOSTNAME=0.0.0.0` plus the explicit `-H 0.0.0.0` flag so the
-dev server is reachable from outside the container.
+  dev server is reachable from outside the container.
 - **File watching:** `CHOKIDAR_USEPOLLING=true` and `WATCHPACK_POLLING=true`
-make reloads reliable under Docker Desktop (macOS/Windows).
+  make reloads reliable under Docker Desktop (macOS/Windows).
 - **Telemetry:** `NEXT_TELEMETRY_DISABLED=1`.
 - **No** `.env` **required:** no secrets are needed today; Compose already provides
-the dev vars. If API URLs/keys are added later, put them in a local `.env`
-(already git- and docker-ignored).
+  the dev vars. If API URLs/keys are added later, put them in a local `.env`
+  (already git- and docker-ignored).
 - **Troubleshooting:** port conflict on `3000` → stop the other process or
-remap the port in `docker-compose.yml` (e.g. `"3001:3000"`); after changing
-`package.json`, rerun with `--build` to reinstall dependencies.
-
-
+  remap the port in `docker-compose.yml` (e.g. `"3001:3000"`); after changing
+  `package.json`, rerun with `--build` to reinstall dependencies.
 
 ## Running locally (without Docker)
 
@@ -123,22 +111,32 @@ npm ci
 npm run dev
 ```
 
-
-
 ## Scripts
 
+| Script                  | Purpose                                                   |
+| ----------------------- | --------------------------------------------------------- |
+| `npm run dev`           | Start the dev server (Turbopack)                          |
+| `npm run build`         | Create a production build                                 |
+| `npm run start`         | Serve the production build                                |
+| `npm run lint`          | Run ESLint                                                |
+| `npm run format`        | Format all files with Prettier                            |
+| `npm run format:check`  | Check formatting without writing                          |
+| `npm run test`          | Run Vitest unit + integration tests (single run)          |
+| `npm run test:watch`    | Run Vitest in watch mode                                  |
+| `npm run test:coverage` | Run Vitest with coverage (requires `@vitest/coverage-v8`) |
 
-| Script                 | Purpose                          |
-| ---------------------- | -------------------------------- |
-| `npm run dev`          | Start the dev server (Turbopack) |
-| `npm run build`        | Create a production build        |
-| `npm run start`        | Serve the production build       |
-| `npm run lint`         | Run ESLint                       |
-| `npm run format`       | Format all files with Prettier   |
-| `npm run format:check` | Check formatting without writing |
+## Testing
 
+Vitest + React Testing Library (`vitest.config.mts`, `vitest.setup.ts`).
 
-
+- Unit: cart slice reducers, product query keys, infinite-query pagination
+  (`getNextPageParam`), `apiFetch` / `fetchProducts` (fetch mocked).
+- Integration (mocked React Query, real Redux store via `src/test-utils.tsx`):
+  `ProductCard` (price formatting + add-to-cart), `LoadMore` (determinate
+  progress + states), `CartDrawer` (quantities, remove, total, Esc/close),
+  `Header` (badge count + drawer open/close), `HomeClient` (skeleton, error +
+  retry, empty, grid + load-more, `?page=N` sync), `AnimatedButton` /
+  `CheckoutButton` (success feedback + completion callbacks).
 
 ## Tech stack
 
