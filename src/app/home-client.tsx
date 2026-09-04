@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useInfiniteProducts } from "@/api/products/use-infinite-products";
 import LoadMore from "@/components/LoadMore";
 import ProductCard from "@/components/ProductCard";
+import ProductGridSkeleton from "@/components/ProductGridSkeleton";
 
 /**
  * Client island for the SSR home route.
@@ -59,7 +60,7 @@ export default function HomeClient() {
   }, [loadedPages, isPending, isError, pathname, router, searchParams]);
 
   if (isPending) {
-    return <p role="status">Carregando produtos...</p>;
+    return <ProductGridSkeleton />;
   }
 
   if (isError) {

@@ -10,6 +10,7 @@ import Header from "@/components/Header";
 import MainSection from "@/components/MainSection";
 import { PRODUCTS_PAGE_SIZE } from "@/api";
 import { infiniteProductsOptions } from "@/api/products/infinite-options";
+import ProductGridSkeleton from "@/components/ProductGridSkeleton";
 import HomeClient from "./home-client";
 
 export const metadata: Metadata = {
@@ -66,7 +67,7 @@ export default async function Home({ searchParams }: HomePageProps) {
       <MainSection>
         <main>
           <HydrationBoundary state={dehydrate(queryClient)}>
-            <Suspense fallback={<p role="status">Carregando produtos...</p>}>
+            <Suspense fallback={<ProductGridSkeleton />}>
               <HomeClient />
             </Suspense>
           </HydrationBoundary>
